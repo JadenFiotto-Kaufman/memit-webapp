@@ -94,6 +94,8 @@ def generate_fast(
     input_ids, attention_mask = inp_tok["input_ids"], inp_tok["attention_mask"]
     batch_size = input_ids.size(0)
 
+    max_out_len += input_ids.size(1)
+
     # Setup storage of fast generation with attention caches.
     # `cur_context` is used to define the range of inputs that are not yet
     # stored in `past_key_values`. At each step, we are generating the

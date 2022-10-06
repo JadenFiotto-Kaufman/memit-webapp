@@ -1,15 +1,19 @@
-from typing import Callable, List
-from unittest import result
-
-import torch
-import numpy as np
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import copy
+import os
 import re
-from .rome.util import nethook
+from pathlib import Path
+from typing import Callable, List
+
+import numpy as np
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from .nethook import TraceDict
+from .rome.rome import ROMEHyperParams, apply_rome_to_model
+from .rome.util import generate, nethook
 
 
-class LogitLens:
+class Processor:
 
     def __init__(self,
         model_name,
@@ -24,6 +28,8 @@ class LogitLens:
 
         nethook.set_requires_grad(False, model)
 
+
+        self._model_name = model_name
         self._model = model
         self._decoder = torch.nn.Sequential(self._model.transformer.ln_f, self._model.lm_head)
         self._tokenizer = tokenizer
@@ -92,7 +98,48 @@ class LogitLens:
 
         return [self._tokenizer.decode(token) for token in tokens]
 
-    def __call__(self, 
+    def generate(self, prompt, number_generated):
+
+        generated = generate.generate_fast(self._model, self._tokenizer, [prompt], n_gen_per_prompt=1, top_k=1, max_out_len=number_generated)[0]
+
+        return generated
+
+    # def apply_rewrite(self, edited_state_dict):
+
+        
+
+    def rewrite(self, prompt, target, layers, token_idx):
+
+        model_copy = copy.deepcopy(self._model.cpu()).cuda()
+
+        nethook.set_requires_grad(True, model_copy)
+
+        hyperparams_path = os.path.join(Path(__file__).parent.resolve(), "rome/hparams", "ROME", f"{self._model_name}.json")
+
+        hparams = ROMEHyperParams.from_json(hyperparams_path)
+        hparams.layers = layers
+
+        request = {
+            "prompt": prompt,
+            "token_idx" :token_idx,
+            "target": target
+        }
+
+        edited_model, orig_weights = apply_rome_to_model(
+            model_copy, 
+            self._tokenizer, 
+            request, 
+            hparams, 
+            copy=False
+        )
+
+        edited_state_dict = edited_model.cpu().state_dict()
+
+        del edited_model, model_copy
+
+        return edited_state_dict
+
+    def logitlens(self, 
         hidden_state_function: Callable,
         prompt: str,
         topk: int = 5):

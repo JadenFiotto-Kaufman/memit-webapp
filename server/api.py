@@ -1,8 +1,9 @@
+import io
 from uuid import uuid1
-
-from flask import Flask, jsonify, session, request, Response
+import torch
+from flask import Flask, jsonify, session, request, Response, send_file
 from flask_cors import CORS
-from .pompeii.logitlens import LogitLens
+from .pompeii.Processor import Processor
 from .pompeii.hidden_state_options import HiddenStateOption
 
 app = Flask(__name__)
@@ -11,7 +12,7 @@ app.secret_key = 'debug_key'
 
 CORS(app, resources={r'/*': {'origins': '*'}})
 
-logit_lens = LogitLens('gpt2-xl', low_cpu_mem_usage=True)
+processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
 
 
 def initialization_required(func):
@@ -48,9 +49,9 @@ def logitlens():
 
     hidden_state_options = HiddenStateOption.get_options(hidden_state_indicies)
 
-    result = logit_lens(hidden_state_options, prompt)
+    result = processor.logitlens(hidden_state_options, prompt)
 
-    prompt = logit_lens.detokenize(logit_lens.tokenize(prompt))
+    prompt = processor.detokenize(processor.tokenize(prompt))
 
     response = {
         'data': result,
@@ -58,6 +59,34 @@ def logitlens():
     }
 
     return jsonify(response)
+
+@initialization_required
+@app.route('/generate', methods=['GET'])
+def generate():
+
+    number_generated, prompt = int(request.args.get('number_generated')), request.args.get('prompt')
+
+    normal_generated = processor.generate(prompt, number_generated)
+
+    response = {
+        'normal_generated': normal_generated    }
+
+    return jsonify(response)
+
+@initialization_required
+@app.route('/rewrite', methods=['GET'])
+def rewrite():
+
+    layers, prompt, token_idx, target = request.args.getlist('layers[]'), request.args.get('prompt'), int(request.args.get('token_idx')), request.args.get('target')
+    layers = [int(layer) for layer in layers]
+
+    edited_state_dict = processor.rewrite(prompt, target, layers, token_idx)
+
+    file = io.BytesIO()
+    torch.save(edited_state_dict, file, _use_new_zipfile_serialization=False)
+    file.seek(0)
+
+    return send_file(file, mimetype='application/octet-stream')
 
 
 if __name__ == '__main__':
