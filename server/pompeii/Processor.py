@@ -19,9 +19,15 @@ class Processor:
         model_name,
         low_cpu_mem_usage=True,
         layers=None,
+        model = None,
         ):
 
-        model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=low_cpu_mem_usage).to("cuda")
+        if model is None:
+
+            model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=low_cpu_mem_usage)
+
+        model = model.to("cuda")
+
         tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         tokenizer.pad_token = tokenizer.eos_token
@@ -40,6 +46,8 @@ class Processor:
              if re.match('^transformer.h.\d+$', n)])))
 
         self._layers = layers
+
+        self.rewrite_processor = None
     
     def _get_hidden_states(self, 
         hidden_state_options: List,
@@ -98,9 +106,9 @@ class Processor:
 
         return [self._tokenizer.decode(token) for token in tokens]
 
-    def generate(self, prompt, number_generated):
+    def generate(self, prompt, number_generated, topk):
 
-        generated = generate.generate_fast(self._model, self._tokenizer, [prompt], n_gen_per_prompt=1, top_k=1, max_out_len=number_generated)[0]
+        generated = generate.generate_fast(self._model, self._tokenizer, [prompt], n_gen_per_prompt=1, top_k=topk, max_out_len=number_generated)[0]
 
         return generated
 
@@ -133,11 +141,9 @@ class Processor:
             copy=False
         )
 
-        edited_state_dict = edited_model.cpu().state_dict()
+        self._model = self._model.cuda()
 
-        del edited_model, model_copy
-
-        return edited_state_dict
+        return edited_model
 
     def logitlens(self, 
         hidden_state_function: Callable,

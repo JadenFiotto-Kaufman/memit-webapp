@@ -15,23 +15,11 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
 
 
-def initialization_required(func):
-    def wrapper():
-
-        if not session.get('uuid'):
-            return Response(
-                'Uninitialized',
-                401
-            )
-
-        return func()
-    return wrapper
 
 
-@app.route('/init', methods=['POST'])
+@app.route('/options', methods=['POST'])
 def init():
 
-    session['uuid'] = uuid1()
 
     response = {
         'hidden_state_options': HiddenStateOption.options()
@@ -40,7 +28,6 @@ def init():
     return jsonify(response)
 
 
-@initialization_required
 @app.route('/logitlens', methods=['GET'])
 def logitlens():
 
@@ -51,42 +38,53 @@ def logitlens():
 
     result = processor.logitlens(hidden_state_options, prompt)
 
+    rewrite_result = None
+
+    if processor.rewrite_processor is not None:
+
+        rewrite_result = processor.rewrite_processor.logitlens(hidden_state_options, prompt)
+
+
     prompt = processor.detokenize(processor.tokenize(prompt))
 
     response = {
         'data': result,
+        'rewrite_data': rewrite_result,
         'prompt': prompt
     }
 
     return jsonify(response)
 
-@initialization_required
 @app.route('/generate', methods=['GET'])
 def generate():
 
-    number_generated, prompt = int(request.args.get('number_generated')), request.args.get('prompt')
+    number_generated, topk, prompt = int(request.args.get('number_generated')), int(request.args.get('topk')), request.args.get('prompt')
 
-    normal_generated = processor.generate(prompt, number_generated)
+    original_generated = processor.generate(prompt, number_generated, topk)
+
+    rewrite_generated = None
+
+    if processor.rewrite_processor is not None:
+
+        rewrite_generated = processor.rewrite_processor.generate(prompt, number_generated, topk)
 
     response = {
-        'normal_generated': normal_generated    }
+        'normal_generated': original_generated ,
+        'rewrite_generated': rewrite_generated   }
 
     return jsonify(response)
 
-@initialization_required
 @app.route('/rewrite', methods=['GET'])
 def rewrite():
 
     layers, prompt, token_idx, target = request.args.getlist('layers[]'), request.args.get('prompt'), int(request.args.get('token_idx')), request.args.get('target')
     layers = [int(layer) for layer in layers]
 
-    edited_state_dict = processor.rewrite(prompt, target, layers, token_idx)
+    rewrite_model = processor.rewrite(prompt, target, layers, token_idx)
 
-    file = io.BytesIO()
-    torch.save(edited_state_dict, file, _use_new_zipfile_serialization=False)
-    file.seek(0)
+    processor.rewrite_processor = Processor('gpt2-xl', model=rewrite_model, low_cpu_mem_usage=True)
 
-    return send_file(file, mimetype='application/octet-stream')
+    return jsonify(success=True)
 
 
 if __name__ == '__main__':
