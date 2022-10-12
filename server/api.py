@@ -1,7 +1,6 @@
 import io
-from uuid import uuid1
 import torch
-from flask import Flask, jsonify, session, request, Response, send_file
+from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 from .pompeii.Processor import Processor
 from .pompeii.hidden_state_options import HiddenStateOption
@@ -15,11 +14,13 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
 
 
+def decode_deltas(data):
+
+    return torch.load(io.BytesIO(data))
 
 
 @app.route('/options', methods=['POST'])
-def init():
-
+def options():
 
     response = {
         'hidden_state_options': HiddenStateOption.options()
@@ -28,63 +29,80 @@ def init():
     return jsonify(response)
 
 
-@app.route('/logitlens', methods=['GET'])
+@app.route('/logitlens', methods=['POST', 'GET'])
 def logitlens():
 
-    hidden_state_indicies, prompt = request.args.getlist('indicies[]'), request.args.get('prompt')
+    hidden_state_indicies, prompt = request.args.getlist(
+        'indicies[]'), request.args.get('prompt')
     hidden_state_indicies = [int(index) for index in hidden_state_indicies]
 
     hidden_state_options = HiddenStateOption.get_options(hidden_state_indicies)
 
-    result = processor.logitlens(hidden_state_options, prompt)
+    logitlens = processor.logitlens(hidden_state_options, prompt)
 
-    rewrite_result = None
+    rewrite_logitlens = None
 
-    if processor.rewrite_processor is not None:
+    if len(request.data) > 0:
 
-        rewrite_result = processor.rewrite_processor.logitlens(hidden_state_options, prompt)
+        rewrite_processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
 
+        rewrite_processor.rewrite_apply(decode_deltas(request.data))
+
+        rewrite_logitlens = rewrite_processor.logitlens(
+            hidden_state_options, prompt)
 
     prompt = processor.detokenize(processor.tokenize(prompt))
 
     response = {
-        'data': result,
-        'rewrite_data': rewrite_result,
+        'logitlens': logitlens,
+        'rewrite_logitlens': rewrite_logitlens,
         'prompt': prompt
     }
 
     return jsonify(response)
 
-@app.route('/generate', methods=['GET'])
+
+@app.route('/generate', methods=['POST', 'GET'])
 def generate():
 
-    number_generated, topk, prompt = int(request.args.get('number_generated')), int(request.args.get('topk')), request.args.get('prompt')
+    number_generated, topk, prompt = int(request.args.get('number_generated')), int(
+        request.args.get('topk')), request.args.get('prompt')
 
-    original_generated = processor.generate(prompt, number_generated, topk)
+    generated = processor.generate(prompt, number_generated, topk)
 
     rewrite_generated = None
 
-    if processor.rewrite_processor is not None:
+    if len(request.data) > 0:
 
-        rewrite_generated = processor.rewrite_processor.generate(prompt, number_generated, topk)
+        rewrite_processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
+
+        rewrite_processor.rewrite_apply(decode_deltas(request.data))
+
+        rewrite_generated = rewrite_processor.generate(
+            prompt, number_generated, topk)
 
     response = {
-        'normal_generated': original_generated ,
-        'rewrite_generated': rewrite_generated   }
+        'generated': generated,
+        'rewrite_generated': rewrite_generated
+    }
 
     return jsonify(response)
+
 
 @app.route('/rewrite', methods=['GET'])
 def rewrite():
 
-    layers, prompt, token_idx, target = request.args.getlist('layers[]'), request.args.get('prompt'), int(request.args.get('token_idx')), request.args.get('target')
-    layers = [int(layer) for layer in layers]
+    layers, prompt, token_idx, target = request.args.getlist('layers[]'), request.args.get(
+        'prompt'), int(request.args.get('token_idx')), request.args.get('target')
+    layers = [int(layer) - 1 for layer in layers]
 
-    rewrite_model = processor.rewrite(prompt, target, layers, token_idx)
+    deltas = processor.rewrite_deltas(prompt, target, layers, token_idx)
 
-    processor.rewrite_processor = Processor('gpt2-xl', model=rewrite_model, low_cpu_mem_usage=True)
+    to_send = io.BytesIO()
+    torch.save(deltas, to_send, _use_new_zipfile_serialization=False)
+    to_send.seek(0)
 
-    return jsonify(success=True)
+    return send_file(to_send, mimetype='application/octet-stream')
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 <template>
-    <b-overlay :show="loading" style="background: lightgray; height:100vh; width:100vw">
+    <b-overlay :show="loading" style="height:100vh; width:100vw">
         <!-- <template #overlay>
             <b-spinner class="position-absolute bottom-50 end-50"></b-spinner>
         </template> -->
@@ -29,7 +29,7 @@
                                     <LLME_LogitLens ref="LogitLens" :prompt="prompt" @alert="alert" @toggle_loading="toggle_loading">
                                     </LLME_LogitLens>
                                 </b-tab>
-                                <b-tab title="Playground" key="tab-playground">
+                                <b-tab title="Sandbox" key="tab-sandbox">
                                     <LLME_Sandbox ref="Sandbox" :prompt="prompt" @toggle_loading="toggle_loading">
                                     </LLME_Sandbox>
                                 </b-tab>
@@ -44,6 +44,10 @@
 
 <style>
 
+:root {
+
+    --bs-body-bg: #D3D3D3 !important
+}
 </style>
     
     
@@ -53,6 +57,7 @@ import LLME_Alert from './Alert.vue'
 import LLME_Options from './Options.vue'
 import LLME_LogitLens from './LogitLens.vue'
 import LLME_Sandbox from './Sandbox.vue'
+import Vue from 'vue';
 export default {
     name: 'LLME',
     components: {
@@ -97,11 +102,12 @@ export default {
             else if (this.main_tab_index == 1) {
                 this.$refs.Sandbox.generate(this.prompt, this.$refs.Options.number_generated, this.$refs.Options.topk_sampling)
             }
-
         },
-
-
     },
+
+    created(){
+        Vue.prototype.$rewrite_deltas = undefined
+    }
 
 };
 </script>

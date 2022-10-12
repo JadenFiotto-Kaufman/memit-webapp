@@ -21,6 +21,7 @@ def apply_rome_to_model(
     hparams: ROMEHyperParams,
     copy=False,
     return_orig_weights=False,
+    deltas=None
 ) -> Tuple[AutoModelForCausalLM, List[str]]:
     """
     Returns a model with the desired changes.
@@ -31,7 +32,9 @@ def apply_rome_to_model(
     :return: (1) the updated model, (2) an original copy of the weights that changed
     """
 
-    deltas = execute_rome(model, tok, request, hparams)
+    if deltas is None:
+        deltas = execute_rome(model, tok, request, hparams)
+        
     if copy:
         model = deepcopy(model)
 

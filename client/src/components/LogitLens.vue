@@ -1,5 +1,5 @@
 <template>
-    <b-col>
+    <b-container fluid>
         <b-row style="margin-bottom: 20px" align-v="center">
             <b-col cols="1">
                 <b-button :pressed.sync="rewrite_toggle" variant="primary">Rewrite
@@ -17,8 +17,8 @@
                     <b-tabs content-class="mt-3" fill class="mt-3">
                         <b-tab :title="_logitlens_data.name" v-for="_logitlens_data in logitlens_data.data"
                             :key="'tab-logitlens-' + logitlens_data.name + '-' + _logitlens_data.name">
-                            <b-table :items="_logitlens_data.data" :fields="_logitlens_data.fields"
-                                table-class="logitlens_table" class="text-center">
+                            <b-table head-row-variant="light" bordered sticky-header="100vh" :items="_logitlens_data.data" :fields="_logitlens_data.fields"
+                                class="text-center">
                                 <template #head()="data">
                                     <b-button v-if="'index' in data.field" @click="rewrite_token_index=data.field.index"
                                         :variant="rewrite_token_index==data.field.index ? 'warning': 'outline-dark'"
@@ -35,7 +35,7 @@
                                         {{data.value}}
                                     </b-button>
                                     <span v-else class="d-block"
-                                        :style="{'background': 'rgb(' + data.item.colors[data.field.index]?.join(',') + ')'}">{{
+                                        :style="{'border-style' : 'solid', 'border-width' : '8px',  'border-color': 'rgb(' + data.item.colors[data.field.index]?.join(',') + ')'}">{{
                                         data.value }}</span>
                                 </template>
                             </b-table>
@@ -45,7 +45,7 @@
                 </b-tab>
             </b-tabs>
         </b-row>
-    </b-col>
+    </b-container>
 </template>
 
 <style>
@@ -108,13 +108,13 @@ export default {
 
             this.$emit('toggle_loading')
 
-            const path = 'http://localhost:5000/rewrite';
+            const path = process.env.VUE_APP_API_URL + 'rewrite';
             let params = { layers: Object.keys(this.rewrite_layers), token_idx: this.rewrite_token_index, prompt: this.prompt, target: this.rewrite_target }
 
-            axios.get(path, { params: params })
+            axios.get(path, { params: params, responseType: 'blob'})
                 .then((response) => {
 
-                    console.log(response)
+                    Vue.prototype.$rewrite_deltas = new Blob([response.data], {type: 'application/octet-stream'})
 
                     this.show_loading = false
 
@@ -135,10 +135,10 @@ export default {
             this.rewrite_toggle = false
             this.rewrite_layers = {}
 
-            const path = 'http://localhost:5000/logitlens';
+            const path = process.env.VUE_APP_API_URL + 'logitlens';
             let params = { indicies: hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt }
-
-            axios.get(path, { params: params })
+            
+            axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: {'Content-Type': 'application/octet-stream'} })
                 .then((response) => {
 
                     let tokenized_prompt = response.data.prompt
@@ -153,18 +153,18 @@ export default {
 
                     let original_items = []
 
-                    for (const [key, value] of Object.entries(response.data.data)) {
+                    for (const [key, value] of Object.entries(response.data.logitlens)) {
 
                         original_items.push({ data: this._logitlens(value.words, value.probabilities, tokenized_prompt, hidden_state_options[key].value.color), name: hidden_state_options[key].text, fields: fields })
                     }
 
                     items.push({ data: original_items, name: 'Original' })
 
-                    if (response.data.rewrite_data) {
+                    if (response.data.rewrite_logitlens) {
 
                         let rewrite_items = []
 
-                        for (const [key, value] of Object.entries(response.data.rewrite_data)) {
+                        for (const [key, value] of Object.entries(response.data.rewrite_logitlens)) {
 
                             rewrite_items.push({ data: this._logitlens(value.words, value.probabilities, tokenized_prompt, hidden_state_options[key].value.color), name: hidden_state_options[key].text, fields: fields })
                         }
@@ -189,7 +189,7 @@ export default {
             let items = []
 
             for (let layer = 0; layer < words.length; layer++) {
-                let item = { Layer: layer, colors: [] }
+                let item = { Layer: layer + 1, colors: [] }
                 for (let token_idx = 0; token_idx < tokenized_prompt.length; token_idx++) {
                     item[tokenized_prompt[token_idx]] = words[layer][token_idx][0]
                     let probability = probabilities[layer][token_idx][0]

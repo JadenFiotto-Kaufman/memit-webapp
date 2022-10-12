@@ -93,7 +93,8 @@ export default {
     },
     methods: {
         get_options() {
-            const path = 'http://localhost:5000/options';
+
+            const path = process.env.VUE_APP_API_URL + 'options';
 
             axios.post(path)
                 .then((response) => {

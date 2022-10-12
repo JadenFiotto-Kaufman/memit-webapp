@@ -9,7 +9,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from .nethook import TraceDict
-from .rome.rome import ROMEHyperParams, apply_rome_to_model
+from .rome.rome import ROMEHyperParams, execute_rome, apply_rome_to_model
 from .rome.util import generate, nethook
 
 
@@ -18,22 +18,15 @@ class Processor:
     def __init__(self,
         model_name,
         low_cpu_mem_usage=True,
-        layers=None,
-        model = None,
-        ):
+        layers=None):
 
-        if model is None:
-
-            model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=low_cpu_mem_usage)
-
-        model = model.to("cuda")
+        model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=low_cpu_mem_usage).cuda()
 
         tokenizer = AutoTokenizer.from_pretrained(model_name)
 
         tokenizer.pad_token = tokenizer.eos_token
 
         nethook.set_requires_grad(False, model)
-
 
         self._model_name = model_name
         self._model = model
@@ -46,8 +39,6 @@ class Processor:
              if re.match('^transformer.h.\d+$', n)])))
 
         self._layers = layers
-
-        self.rewrite_processor = None
     
     def _get_hidden_states(self, 
         hidden_state_options: List,
@@ -112,11 +103,12 @@ class Processor:
 
         return generated
 
-    # def apply_rewrite(self, edited_state_dict):
+    def rewrite_apply(self, deltas):
+
+        _, _ = apply_rome_to_model(self._model, None, None, None, copy=False, deltas=deltas)
 
         
-
-    def rewrite(self, prompt, target, layers, token_idx):
+    def rewrite_deltas(self, prompt, target, layers, token_idx):
 
         model_copy = copy.deepcopy(self._model.cpu()).cuda()
 
@@ -133,17 +125,11 @@ class Processor:
             "target": target
         }
 
-        edited_model, orig_weights = apply_rome_to_model(
-            model_copy, 
-            self._tokenizer, 
-            request, 
-            hparams, 
-            copy=False
-        )
+        deltas = execute_rome(model_copy, self._tokenizer, request, hparams)
 
         self._model = self._model.cuda()
 
-        return edited_model
+        return deltas
 
     def logitlens(self, 
         hidden_state_function: Callable,
