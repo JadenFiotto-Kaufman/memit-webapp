@@ -33,6 +33,10 @@
                                     <LLME_Sandbox ref="Sandbox" :prompt="prompt" @toggle_loading="toggle_loading">
                                     </LLME_Sandbox>
                                 </b-tab>
+                                <b-tab title="Heatmap" key="tab-heatmap">
+                                    <LLME_Heatmap ref="Heatmap" :prompt="prompt" @toggle_loading="toggle_loading">
+                                    </LLME_Heatmap>
+                                </b-tab>
                             </b-tabs>
                         </b-card>
                     </b-row>
@@ -57,6 +61,7 @@ import LLME_Alert from './Alert.vue'
 import LLME_Options from './Options.vue'
 import LLME_LogitLens from './LogitLens.vue'
 import LLME_Sandbox from './Sandbox.vue'
+import LLME_Heatmap from './Heatmap.vue'
 import Vue from 'vue';
 export default {
     name: 'LLME',
@@ -64,7 +69,8 @@ export default {
         LLME_Alert,
         LLME_Options,
         LLME_LogitLens,
-        LLME_Sandbox
+        LLME_Sandbox,
+        LLME_Heatmap
     },
     data() {
         return {
@@ -101,6 +107,15 @@ export default {
             }
             else if (this.main_tab_index == 1) {
                 this.$refs.Sandbox.generate(this.prompt, this.$refs.Options.number_generated, this.$refs.Options.topk_sampling)
+            }
+            else if (this.main_tab_index == 2) {
+                if (this.$refs.Options.hidden_state_functions.length == 0) {
+
+                    this.alert('Select at least one hidden state', 2)
+
+                    return
+                }
+                this.$refs.Heatmap.heatmap(this.$refs.Options.hidden_state_options, this.$refs.Options.hidden_state_functions)
             }
         },
     },

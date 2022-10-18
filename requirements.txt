@@ -1,0 +1,9 @@
+flask
+flask_cors
+torch
+numpy
+transformers
+datasets
+matplotlib
+accelerate
+--extra-index-url https://download.pytorch.org/whl/cu116

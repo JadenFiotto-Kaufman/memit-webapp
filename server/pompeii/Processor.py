@@ -134,7 +134,7 @@ class Processor:
     def logitlens(self, 
         hidden_state_function: Callable,
         prompt: str,
-        topk: int = 5):
+        topn: int = None):
         
         options_hidden_states = self._get_hidden_states(hidden_state_function, prompt)
 
@@ -148,12 +148,16 @@ class Processor:
 
             probabilities = self.probabilities(tokens).cpu()
 
-            top_probs, top_tokens = probabilities.topk(k=topk, dim=-1)
-            top_probs, top_tokens = top_probs[:,0].numpy(), top_tokens[:,0].numpy()
+            if topn is None:
 
-            top_words = np.array([[self.detokenize(_tokens) for _tokens in tokens] for tokens in top_tokens])
+                topn = probabilities.shape[-1]
 
-            result[key] = {'words' : top_words.tolist(), 'probabilities' : top_probs.tolist()}
+            probabilities, tokens = probabilities.topk(k=topn, dim=-1)
+            probabilities, tokens = probabilities[:,0].numpy(), tokens[:,0].numpy()
+
+            words = np.array([[self.detokenize(__tokens) for __tokens in _tokens] for _tokens in tokens])
+
+            result[key] = {'words' : words.tolist(), 'probabilities' : probabilities.tolist()}
 
         return result
 

@@ -136,7 +136,7 @@ export default {
             this.rewrite_layers = {}
 
             const path = process.env.VUE_APP_API_URL + 'logitlens';
-            let params = { indicies: hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt }
+            let params = { indicies: hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: 10 }
             
             axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: {'Content-Type': 'application/octet-stream'} })
                 .then((response) => {
@@ -175,8 +175,6 @@ export default {
 
                     this.logitlens_items = items
 
-                    this.show_loading = false
-
                 })
                 .catch((error) => {
                     console.error(error)
@@ -193,7 +191,7 @@ export default {
                 for (let token_idx = 0; token_idx < tokenized_prompt.length; token_idx++) {
                     item[tokenized_prompt[token_idx]] = words[layer][token_idx][0]
                     let probability = probabilities[layer][token_idx][0]
-                    item.colors.push(color.map(function (x) { return parseInt(255 * (1 - probability) + x * probability) }))
+                    item.colors.push(color.map(function (x) { return 255 * (1 - probability) + x * probability }))
                 }
                 items.push(item)
             }

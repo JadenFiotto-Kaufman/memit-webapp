@@ -32,13 +32,13 @@ def options():
 @app.route('/logitlens', methods=['POST', 'GET'])
 def logitlens():
 
-    hidden_state_indicies, prompt = request.args.getlist(
-        'indicies[]'), request.args.get('prompt')
+    hidden_state_indicies, prompt, topn = request.args.getlist(
+        'indicies[]'), request.args.get('prompt'), int(request.args.get('topn'))
     hidden_state_indicies = [int(index) for index in hidden_state_indicies]
 
     hidden_state_options = HiddenStateOption.get_options(hidden_state_indicies)
 
-    logitlens = processor.logitlens(hidden_state_options, prompt)
+    logitlens = processor.logitlens(hidden_state_options, prompt, topn=topn)
 
     rewrite_logitlens = None
 
@@ -49,7 +49,7 @@ def logitlens():
         rewrite_processor.rewrite_apply(decode_deltas(request.data))
 
         rewrite_logitlens = rewrite_processor.logitlens(
-            hidden_state_options, prompt)
+            hidden_state_options, prompt, topn=topn)
 
     prompt = processor.detokenize(processor.tokenize(prompt))
 
@@ -60,7 +60,6 @@ def logitlens():
     }
 
     return jsonify(response)
-
 
 @app.route('/generate', methods=['POST', 'GET'])
 def generate():

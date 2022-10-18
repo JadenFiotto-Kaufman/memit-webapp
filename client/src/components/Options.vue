@@ -1,6 +1,6 @@
 <template>
     <b-container fluid>
-        <div id="logitlens-options" v-if="main_tab_index == 0">
+        <div id="logitlens-options" v-if="main_tab_index == 0 || main_tab_index == 2">
             <b-row>
                 <b-col>
                     <b-row>
