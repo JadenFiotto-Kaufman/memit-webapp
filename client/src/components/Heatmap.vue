@@ -135,10 +135,6 @@ export default {
 
             this.$emit('toggle_loading')
 
-            this.rewrite_token_index = undefined
-            this.rewrite_toggle = false
-            this.rewrite_layers = {}
-
             const path = process.env.VUE_APP_API_URL + 'logitlens';
             let params = { indicies: hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: this.n_words }
 
@@ -158,7 +154,7 @@ export default {
 
                     items.push({ data: original_items, name: 'Original' })
 
-                    if (response.data.rewrite_heatmap) {
+                    if (response.data.rewrite_logitlens) {
 
                         let rewrite_items = []
 
