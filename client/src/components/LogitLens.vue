@@ -1,14 +1,7 @@
 <template>
     <b-container fluid>
         <b-row style="margin-bottom: 20px" align-v="center">
-            <b-col cols="1">
-                <b-button :pressed.sync="rewrite_toggle" variant="primary">Rewrite
-                </b-button>
-            </b-col>
-            <b-col v-if="rewrite_toggle" cols="2">
-                <b-form-input v-model="rewrite_target" placeholder="Enter rewrite" @keydown.enter="rewrite">
-                </b-form-input>
-            </b-col>
+          
         </b-row>
         <b-row>
             <b-tabs fill>
@@ -140,6 +133,8 @@ export default {
             
             axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: {'Content-Type': 'application/octet-stream'} })
                 .then((response) => {
+
+                    console.log(response)
 
                     let tokenized_prompt = response.data.prompt
 
