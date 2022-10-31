@@ -9,21 +9,32 @@
                 <LLME_Options ref="Options" :main_tab_index="main_tab_index"></LLME_Options>
             </b-container>
         </b-sidebar>
-        <b-button v-b-toggle.options-sidebar style="position:sticky; top:0; left:0; z-index: 999; top:1%; left:1%;"
-            variant="primary">Options</b-button>
-        <b-container fluid style="padding-right: 8%; padding-left: 8%;">
+        <b-sidebar title="Help" id="help-sidebar" bg-variant="dark" text-variant="light" shadow>
+            <b-container fluid>
+                <LLME_Help ref="Help" :main_tab_index="main_tab_index"></LLME_Help>
+            </b-container>
+        </b-sidebar>
+        <b-container fluid style="position:sticky; top:1%; left:1%; z-index: 999; margin-left:1%">
+            <b-row align-h="start">
+                <b-button style="width:auto" v-b-toggle.options-sidebar variant="primary">Options</b-button>
+                <b-button style="width:auto; margin-left:1%" v-b-toggle.help-sidebar variant="primary">What's this?
+                </b-button>
+            </b-row>
+        </b-container>
+        <b-container fluid style="padding-right: 5%; padding-left: 5%;">
             <b-row>
                 <b-col>
-                    <b-row v-if="!has_ran">
-                        <h1 style="font-family: Georgia, 'Times New Roman', Times, serif;" class="text-center">Memit Explorer</h1>
+                    <b-row v-show="!has_ran" style="margin-top:10%">
+                        <h1 style="font-family: Georgia, 'Times New Roman', Times, serif;" class="text-center">Memit
+                            Explorer</h1>
                     </b-row>
-                    <b-row style="margin: 5% 15% 20px 15%">
+                    <b-row style="margin: 1% 15% 20px 15%">
                         <b-col>
                             <b-form-input v-model="prompt" placeholder="Enter prompt" @keydown.enter="on_prompt_enter">
                             </b-form-input>
                         </b-col>
                     </b-row>
-                    <b-row>
+                    <b-row v-show="has_ran">
                         <b-card no-body>
                             <b-tabs card v-model="main_tab_index">
                                 <b-tab title="Sandbox" key="tab-sandbox">
@@ -39,7 +50,7 @@
                                     <LLME_Heatmap ref="Heatmap" :prompt="prompt" @toggle_loading="toggle_loading">
                                     </LLME_Heatmap>
                                 </b-tab>
-                                <b-tab title="Rewrite Facts" key="tab-rewritefacts">
+                                <b-tab title="Inserted Memories" key="tab-rewritefacts">
                                     <LLME_RewriteFacts ref="RewriteFacts" @toggle_loading="toggle_loading">
                                     </LLME_RewriteFacts>
                                 </b-tab>
@@ -68,6 +79,7 @@ import LLME_LogitLens from './LogitLens.vue'
 import LLME_Sandbox from './Sandbox.vue'
 import LLME_Heatmap from './Heatmap.vue'
 import LLME_RewriteFacts from './RewriteFacts.vue'
+import LLME_Help from './Help.vue'
 import Vue from 'vue';
 export default {
     name: 'LLME',
@@ -77,7 +89,8 @@ export default {
         LLME_LogitLens,
         LLME_Sandbox,
         LLME_Heatmap,
-        LLME_RewriteFacts
+        LLME_RewriteFacts,
+        LLME_Help
     },
     data() {
         return {

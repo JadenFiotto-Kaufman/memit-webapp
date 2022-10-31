@@ -74,7 +74,7 @@
 
 import axios from 'axios'
 export default {
-    name: 'LLME_Options',
+    name: 'LLME_Help',
     props: {
         main_tab_index: {
             type: Number,
@@ -86,8 +86,8 @@ export default {
 
             hidden_state_options: [],
             hidden_state_functions: [],
-            number_generated: 10,
-            topk_sampling: 3
+            number_generated: 1,
+            topk_sampling: 1
 
         };
     },

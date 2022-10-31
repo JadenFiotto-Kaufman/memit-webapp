@@ -28,7 +28,7 @@
                 </b-row>
             </b-col>
         </b-row>
-        <b-row align-h="center">
+        <b-row style="margin-top:1%" align-h="center">
             <b-col cols="4">
                 <b-pagination align="fill" v-model="currentPage" :total-rows="numRows" :per-page="perPage" aria-controls="my-table">
                 </b-pagination>

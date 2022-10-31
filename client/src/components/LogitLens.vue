@@ -1,35 +1,33 @@
 <template>
     <b-container fluid>
-        <b-row style="margin-bottom: 20px" align-v="center">
-          
-        </b-row>
         <b-row>
-            <b-tabs fill>
+            <b-tabs pills vertical>
                 <b-tab v-for="logitlens_data in logitlens_items" :title="logitlens_data.name"
                     :key="'tab-logitlens-' + logitlens_data.name">
-                    <b-tabs content-class="mt-3" fill class="mt-3">
+                    <b-tabs pills vertical class="mt-3" v-model="logitlens_tabs">
                         <b-tab :title="_logitlens_data.name" v-for="_logitlens_data in logitlens_data.data"
                             :key="'tab-logitlens-' + logitlens_data.name + '-' + _logitlens_data.name">
-                            <b-table head-row-variant="light" bordered sticky-header="100vh" :items="_logitlens_data.data" :fields="_logitlens_data.fields"
-                                class="text-center">
+                            <b-table head-row-variant="light" bordered sticky-header="100vh"
+                                :items="_logitlens_data.data" :fields="_logitlens_data.fields" class="text-center">
                                 <template #head()="data">
-                                    <b-button v-if="'index' in data.field" @click="rewrite_token_index=data.field.index"
-                                        :variant="rewrite_token_index==data.field.index ? 'warning': 'outline-dark'"
+                                    <b-button v-if="'index' in data.field" @click="rewrite_token_index = data.field.index"
+                                        :variant="rewrite_token_index == data.field.index ? 'warning' : 'outline-dark'"
                                         :disabled="!rewrite_toggle">
-                                        {{data.label}}
+                                        {{ data.label }}
                                     </b-button>
-                                    <span v-else>{{data.label}}</span>
+                                    <span v-else>{{ data.label }}</span>
                                 </template>
                                 <template #cell()="data">
                                     <b-button v-if="data.field.label == 'Layer'"
                                         @click="on_layer_click(data.item.Layer)"
-                                        :variant="data.item.Layer in rewrite_layers ? 'warning': 'outline-dark'"
+                                        :variant="data.item.Layer in rewrite_layers ? 'warning' : 'outline-dark'"
                                         :disabled="!rewrite_toggle">
-                                        {{data.value}}
+                                        {{ data.value }}
                                     </b-button>
                                     <span v-else class="d-block"
-                                        :style="{'border-style' : 'solid', 'border-width' : '8px',  'border-color': 'rgb(' + data.item.colors[data.field.index]?.join(',') + ')'}">{{
-                                        data.value }}</span>
+                                        :style="{ 'border-style': 'solid', 'border-width': '8px', 'border-color': 'rgb(' + data.item.colors[data.field.index]?.join(',') + ')' }">{{
+                                                data.value
+                                        }}</span>
                                 </template>
                             </b-table>
                         </b-tab>
@@ -65,7 +63,8 @@ export default {
             rewrite_target: '',
             rewrite_toggle: false,
             rewrite_layers: {},
-            logitlens_items: []
+            logitlens_items: [],
+            logitlens_tabs: 0
         };
     },
     methods: {
@@ -84,19 +83,19 @@ export default {
             if (Object.keys(this.rewrite_layers).length == 0) {
 
                 alert_message += 'Select at least one layer. '
-                
+
             }
-            if ( typeof this.rewrite_token_index == "undefined" ) {
+            if (typeof this.rewrite_token_index == "undefined") {
 
 
                 alert_message += 'Select a token. '
             }
 
-            if (alert_message != ''){
+            if (alert_message != '') {
 
                 this.$emit('alert', alert_message, 2)
 
-                return 
+                return
             }
 
             this.$emit('toggle_loading')
@@ -104,10 +103,10 @@ export default {
             const path = process.env.VUE_APP_API_URL + 'rewrite';
             let params = { layers: Object.keys(this.rewrite_layers), token_idx: this.rewrite_token_index, prompt: this.prompt, target: this.rewrite_target }
 
-            axios.get(path, { params: params, responseType: 'blob'})
+            axios.get(path, { params: params, responseType: 'blob' })
                 .then((response) => {
 
-                    Vue.prototype.$rewrite_deltas = new Blob([response.data], {type: 'application/octet-stream'})
+                    Vue.prototype.$rewrite_deltas = new Blob([response.data], { type: 'application/octet-stream' })
 
                     this.show_loading = false
 
@@ -130,8 +129,8 @@ export default {
 
             const path = process.env.VUE_APP_API_URL + 'logitlens';
             let params = { indicies: hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: 10 }
-            
-            axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: {'Content-Type': 'application/octet-stream'} })
+
+            axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: { 'Content-Type': 'application/octet-stream' } })
                 .then((response) => {
 
                     console.log(response)
