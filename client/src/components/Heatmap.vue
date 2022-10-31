@@ -2,35 +2,41 @@
     <b-container fluid id="heatmap-id">
         <b-row style="margin-bottom: 20px" align-v="center">
             <b-col cols="2">
-                <b-form-input v-model="search_token" placeholder="Search">
+                <b-form-input v-model.trim="search_token" debounce="200" placeholder="Search">
                 </b-form-input>
             </b-col>
             <b-col cols="2">
                 <b-form-select v-model="heatmap_options_value" :options="heatmap_options"></b-form-select>
             </b-col>
         </b-row>
-        <b-row>
-            <b-tabs fill v-if="search_token != ''">
-                <b-tab v-for="heatmap_data in heatmap_items" :title="heatmap_data.name"
-                    :key="'tab-heatmap-' + heatmap_data.name">
-                    <b-tabs content-class="mt-3" fill class="mt-3">
-                        <b-tab :title="_heatmap_data.name" v-for="_heatmap_data in heatmap_data.data"
-                            :key="'tab-heatmap-' + heatmap_data.name + '-' + _heatmap_data.name">
-                            <b-container>
-                                <b-row v-for="(items_layers, layer_idx) in _heatmap_data.data"
-                                    :key="'tab-heatmap-' + heatmap_data.name + '-' + _heatmap_data.name + '-' + layer_idx"
-                                    :style="{'justify-content' : 'center'}">
+        <b-row v-if="(heatmaps.length > 0) && (search_token != '')">
+            <b-tabs lazy content-class="mt-3" pills vertical class="mt-3">
+                <b-tab lazy v-for="(_heatmap_hs_index, heatmap_hs_index) in heatmaps[0].data.length"
+                    :title="heatmaps[0].data[heatmap_hs_index].name" :key="'tab-heatmap-hs-' + _heatmap_hs_index">
+                    <b-container fluid>
+                        <b-row>
+                            <b-col v-for="(heatmap_data, heatmap_index) in heatmaps"
+                                :key="'tab-heatmap-' + + heatmap_hs_index + '-' + heatmap_index">
+                                <b-row :style="{ 'justify-content': 'center' }">{{heatmap_data.name}}</b-row>
+                                <b-row :style="{ 'justify-content': 'center' }">
+                                    <b-col v-for="(token, prompt_idx) in tokenized_prompt"
+                                        :key="'tab-heatmap-prompt-' + heatmap_hs_index + '-' + heatmap_index + '-' + prompt_idx"
+                                        :style="{ 'text-align': 'center', 'border': '1px solid', 'max-width': pixel_width + 'px', 'height': 25 + 'px', 'padding': '0', 'overflow': 'hidden' }">
+                                        {{ token }}</b-col>
+                                </b-row>
+                                <b-row v-for="(items_layers, layer_idx) in heatmap_data.data[heatmap_hs_index].data"
+                                    :key="'tab-heatmap-' + heatmap_hs_index + '-' + heatmap_index + '-' + layer_idx"
+                                    :style="{ 'justify-content': 'center' }">
                                     <b-col v-for="(items_tokens, token_idx) in items_layers"
-                                        :key="'tab-heatmap-' + heatmap_data.name + '-' + _heatmap_data.name + '-' + layer_idx + '-' + token_idx"
-                                        :style="{'background-color': get_background_color(items_tokens.data), 'max-width' : '15px', 'height': '15px', 'padding' : 0}"
+                                        :key="'tab-heatmap-' + heatmap_hs_index + '-' + heatmap_index + '-' + layer_idx + '-' + token_idx"
+                                        :style="{ 'border': '1px solid', 'background-color': get_background_color(items_tokens.data), 'max-width': pixel_width + 'px', 'height': pixel_height + 'px', 'padding': 0 }"
                                         :title="'Layer: ' + items_tokens.layer + ' Token:' + items_tokens.token"
                                         v-b-popover.hover.html="get_popover(items_tokens)">
-                                        
                                     </b-col>
                                 </b-row>
-                            </b-container>
-                        </b-tab>
-                    </b-tabs>
+                            </b-col>
+                        </b-row>
+                    </b-container>
                 </b-tab>
             </b-tabs>
         </b-row>
@@ -49,6 +55,7 @@
 <script>
 import Vue from 'vue'
 import axios from 'axios'
+import chroma from "chroma-js";
 export default {
     name: 'LLME_Heatmap',
     props: {
@@ -61,23 +68,25 @@ export default {
         return {
 
             search_token: '',
-            heatmap_items: [],
+            tokenized_prompt: [],
+            heatmaps: [],
+            scale: chroma.scale(['white', 'blue', 'purple', 'red']),
             heatmap_options_value: 0,
             heatmap_options: [
                 { value: 0, text: 'Probability' },
                 { value: 1, text: 'Rank' },
             ],
-
-            n_words: 200
+            heatmap_tabs: 0,
+            pixel_height: 15,
+            pixel_width: 35,
+            n_words: 500
         };
     },
     methods: {
 
-        get_popover(data){
+        get_popover(data) {
 
-            this.search_token = this.search_token.trim()
-
-            let _data = data.data[this.search_token] 
+            let _data = data.data[this.search_token]
 
             let html = '<p>Probability: ' + _data?.probability + '</br>Rank: ' + (_data?.rank + 1) + '/' + this.n_words + '</p>'
             return html
@@ -85,49 +94,20 @@ export default {
 
         get_background_color(words_probs) {
 
-            let start = [255, 0, 0]
-            let end = [0, 0, 255]
-
             let prob = 0.0
 
-            this.search_token = this.search_token.trim()
-
-            if (this.search_token == '') {
-
-                let max = 0.0
-
-                for (let key in words_probs) {
-
-                    let _prob = words_probs[key]['probability']
-
-                    if (_prob > max) {
-
-                        max = _prob
-                    }
+            if (this.search_token in words_probs) {
+                if (this.heatmap_options_value == 0) {
+                    prob = words_probs[this.search_token]['probability']
                 }
-
-                prob = max
-            }
-
-            else {
-
-                if (this.search_token in words_probs) {
-                    if (this.heatmap_options_value == 0) {
-                        prob = words_probs[this.search_token]['probability']
-                    }
-                    else if (this.heatmap_options_value == 1) {
-                        prob = words_probs[this.search_token]['rank']
-                        prob = 1.0 - (prob / this.n_words)
-                    }
+                else if (this.heatmap_options_value == 1) {
+                    prob = words_probs[this.search_token]['rank']
+                    prob = 1.0 - (prob / this.n_words)
                 }
             }
+        
 
-            start = start.map(function (x) { return (x * prob) | 0 })
-            end = end.map(function (x) { return (x * (1.0 - prob)) | 0 })
-
-            let color = start.map((e, i) => e + end[i])
-
-            return 'rgb( ' + color.join(',') + ')'
+            return this.scale(prob)
 
         },
 
@@ -141,7 +121,7 @@ export default {
             axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: { 'Content-Type': 'application/octet-stream' } })
                 .then((response) => {
 
-                    let tokenized_prompt = response.data.prompt
+                    this.tokenized_prompt = response.data.prompt
 
                     let items = []
 
@@ -149,7 +129,7 @@ export default {
 
                     for (const [key, value] of Object.entries(response.data.logitlens)) {
 
-                        original_items.push({ data: this._heatmap(value.words, value.probabilities, tokenized_prompt), name: hidden_state_options[key].text })
+                        original_items.push({ data: this._heatmap(value.words, value.probabilities, this.tokenized_prompt), name: hidden_state_options[key].text })
                     }
 
                     items.push({ data: original_items, name: 'Original' })
@@ -160,13 +140,13 @@ export default {
 
                         for (const [key, value] of Object.entries(response.data.rewrite_logitlens)) {
 
-                            rewrite_items.push({ data: this._heatmap(value.words, value.probabilities, tokenized_prompt), name: hidden_state_options[key].text })
+                            rewrite_items.push({ data: this._heatmap(value.words, value.probabilities, this.tokenized_prompt), name: hidden_state_options[key].text })
                         }
 
                         items.push({ data: rewrite_items, name: 'Rewritten' })
                     }
 
-                    this.heatmap_items = items
+                    this.heatmaps = items
 
                 })
                 .catch((error) => {

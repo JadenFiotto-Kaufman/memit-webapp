@@ -9,33 +9,50 @@
                 <LLME_Options ref="Options" :main_tab_index="main_tab_index"></LLME_Options>
             </b-container>
         </b-sidebar>
-        <b-button v-b-toggle.options-sidebar style="position:sticky; top:0; left:0; z-index: 999; top:1%; left:1%;" variant="primary">Options</b-button>
-        <b-container fluid style="padding-right: 8%; padding-left: 8%;">
+        <b-sidebar title="Help" id="help-sidebar" bg-variant="dark" text-variant="light" shadow>
+            <b-container fluid>
+                <LLME_Help ref="Help" :main_tab_index="main_tab_index"></LLME_Help>
+            </b-container>
+        </b-sidebar>
+        <b-container fluid style="position:sticky; top:1%; left:1%; z-index: 999; margin-left:1%">
+            <b-row align-h="start">
+                <b-button style="width:auto" v-b-toggle.options-sidebar variant="primary">Options</b-button>
+                <b-button style="width:auto; margin-left:1%" v-b-toggle.help-sidebar variant="primary">What's this?
+                </b-button>
+            </b-row>
+        </b-container>
+        <b-container fluid style="padding-right: 5%; padding-left: 5%;">
             <b-row>
                 <b-col>
-                    <b-row>
-                        <h1 style="font-family: Georgia, 'Times New Roman', Times, serif;" class="text-center">Large Language Model Explorer</h1>
+                    <b-row v-show="!has_ran" style="margin-top:10%">
+                        <h1 style="font-family: Georgia, 'Times New Roman', Times, serif;" class="text-center">Memit
+                            Explorer</h1>
                     </b-row>
-                    <b-row style="margin: 5% 15% 20px 15%">
+                    <b-row style="margin: 1% 15% 20px 15%">
                         <b-col>
                             <b-form-input v-model="prompt" placeholder="Enter prompt" @keydown.enter="on_prompt_enter">
                             </b-form-input>
                         </b-col>
                     </b-row>
-                    <b-row>
+                    <b-row v-show="has_ran">
                         <b-card no-body>
                             <b-tabs card v-model="main_tab_index">
-                                <b-tab title="Logit Lens" key="tab-logitlens">
-                                    <LLME_LogitLens ref="LogitLens" :prompt="prompt" @alert="alert" @toggle_loading="toggle_loading">
-                                    </LLME_LogitLens>
-                                </b-tab>
                                 <b-tab title="Sandbox" key="tab-sandbox">
                                     <LLME_Sandbox ref="Sandbox" :prompt="prompt" @toggle_loading="toggle_loading">
                                     </LLME_Sandbox>
                                 </b-tab>
+                                <b-tab title="Logit Lens" key="tab-logitlens">
+                                    <LLME_LogitLens ref="LogitLens" :prompt="prompt" @alert="alert"
+                                        @toggle_loading="toggle_loading">
+                                    </LLME_LogitLens>
+                                </b-tab>
                                 <b-tab title="Heatmap" key="tab-heatmap">
                                     <LLME_Heatmap ref="Heatmap" :prompt="prompt" @toggle_loading="toggle_loading">
                                     </LLME_Heatmap>
+                                </b-tab>
+                                <b-tab title="Inserted Memories" key="tab-rewritefacts">
+                                    <LLME_RewriteFacts ref="RewriteFacts" @toggle_loading="toggle_loading">
+                                    </LLME_RewriteFacts>
                                 </b-tab>
                             </b-tabs>
                         </b-card>
@@ -47,7 +64,6 @@
 </template>
 
 <style>
-
 :root {
 
     --bs-body-bg: #D3D3D3 !important
@@ -62,6 +78,8 @@ import LLME_Options from './Options.vue'
 import LLME_LogitLens from './LogitLens.vue'
 import LLME_Sandbox from './Sandbox.vue'
 import LLME_Heatmap from './Heatmap.vue'
+import LLME_RewriteFacts from './RewriteFacts.vue'
+import LLME_Help from './Help.vue'
 import Vue from 'vue';
 export default {
     name: 'LLME',
@@ -70,14 +88,17 @@ export default {
         LLME_Options,
         LLME_LogitLens,
         LLME_Sandbox,
-        LLME_Heatmap
+        LLME_Heatmap,
+        LLME_RewriteFacts,
+        LLME_Help
     },
     data() {
         return {
 
             prompt: '',
             main_tab_index: 0,
-            loading: false
+            loading: false,
+            has_ran: false
         };
     },
     methods: {
@@ -94,9 +115,12 @@ export default {
 
             if (this.prompt == '') {
                 this.alert('Empty prompt', 2)
+                return
             }
 
-            else if (this.main_tab_index == 0) {
+            this.has_ran = true
+
+            if (this.main_tab_index == 1) {
                 if (this.$refs.Options.hidden_state_functions.length == 0) {
 
                     this.alert('Select at least one hidden state', 2)
@@ -105,7 +129,7 @@ export default {
                 }
                 this.$refs.LogitLens.logitlens(this.$refs.Options.hidden_state_options, this.$refs.Options.hidden_state_functions)
             }
-            else if (this.main_tab_index == 1) {
+            else if (this.main_tab_index == 0) {
                 this.$refs.Sandbox.generate(this.prompt, this.$refs.Options.number_generated, this.$refs.Options.topk_sampling)
             }
             else if (this.main_tab_index == 2) {
@@ -120,7 +144,7 @@ export default {
         },
     },
 
-    created(){
+    created() {
         Vue.prototype.$rewrite_deltas = undefined
     }
 
