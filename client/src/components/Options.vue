@@ -1,6 +1,6 @@
 <template>
     <b-container fluid>
-        <div id="logitlens-options" v-if="main_tab_index == 1 || main_tab_index == 2">
+        <div id="logitlens-options" v-if="main_tab_index == 0 || main_tab_index == 2">
             <b-row>
                 <b-col>
                     <b-row>
@@ -17,7 +17,7 @@
             </b-row>
 
         </div>
-        <div id="sandbox-options" v-else-if="main_tab_index == 0">
+        <div id="sandbox-options" v-else-if="main_tab_index == 1">
             <b-row>
                 <b-col>
                     <b-row>
@@ -86,8 +86,8 @@ export default {
 
             hidden_state_options: [],
             hidden_state_functions: [],
-            number_generated: 10,
-            topk_sampling: 3
+            number_generated: 1,
+            topk_sampling: 1
 
         };
     },

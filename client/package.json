@@ -12,7 +12,6 @@
     "bootstrap": "^5.2.1",
     "bootstrap-icons-vue": "^1.8.1",
     "bootstrap-vue": "^2.22.0",
-    "chroma-js": "^2.4.2",
     "core-js": "^3.25.5",
     "vue": "^2.7.12",
     "vue-router": "^3.6.5"

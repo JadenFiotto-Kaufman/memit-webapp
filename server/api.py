@@ -1,42 +1,18 @@
 import io
-import json
-import os
-
 import torch
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
-
-from .pompeii.hidden_state_options import HiddenStateOption
 from .pompeii.Processor import Processor
+from .pompeii.hidden_state_options import HiddenStateOption
 
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.secret_key = 'debug_key'
 
-CORS(app)
+CORS(app, resources={r'/*': {'origins': '*'}})
 
-processor = Processor("EleutherAI/gpt-j-6B", low_cpu_mem_usage=True)
+processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
 
-memit_processor = Processor("EleutherAI/gpt-j-6B", low_cpu_mem_usage=True)
-
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
-memit_state_dict = torch.load(os.path.join(dir_path,'memit_gptj.pth'), map_location='cpu')
-
-memit_processor._model.load_state_dict(memit_state_dict)
-
-memit_rewritten_facts = json.load(open(os.path.join(dir_path,'counterfact.json'), 'r'))
-
-memit_rewritten_facts = [{
-    'prompt' : case['requested_rewrite']['prompt'].split('{}'),
-    'target_new' : case['requested_rewrite']['target_new']['str'],
-    'target_true' : case['requested_rewrite']['target_true']['str'],
-    'subject' : case['requested_rewrite']['subject'],
-    }
- for case in memit_rewritten_facts]
-
-for rewrite_fact in memit_rewritten_facts:
-    rewrite_fact['search'] = ' '.join([*rewrite_fact['prompt'], rewrite_fact['target_new'], rewrite_fact['target_true'], rewrite_fact['subject']])
 
 def decode_deltas(data):
 
@@ -47,15 +23,10 @@ def decode_deltas(data):
 def options():
 
     response = {
-        'hidden_state_options': HiddenStateOption.options(),
+        'hidden_state_options': HiddenStateOption.options()
     }
 
     return jsonify(response)
-
-@app.route('/rewritefacts', methods=['POST'])
-def rewritefacts():
-
-    return jsonify(memit_rewritten_facts)
 
 
 @app.route('/logitlens', methods=['POST', 'GET'])
@@ -69,8 +40,16 @@ def logitlens():
 
     logitlens = processor.logitlens(hidden_state_options, prompt, topn=topn)
 
-    rewrite_logitlens = memit_processor.logitlens(
-        hidden_state_options, prompt, topn=topn)
+    rewrite_logitlens = None
+
+    if len(request.data) > 0:
+
+        rewrite_processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
+
+        rewrite_processor.rewrite_apply(decode_deltas(request.data))
+
+        rewrite_logitlens = rewrite_processor.logitlens(
+            hidden_state_options, prompt, topn=topn)
 
     prompt = processor.detokenize(processor.tokenize(prompt))
 
@@ -90,8 +69,16 @@ def generate():
 
     generated = processor.generate(prompt, number_generated, topk)
 
-    rewrite_generated = memit_processor.generate(
-        prompt, number_generated, topk)
+    rewrite_generated = None
+
+    if len(request.data) > 0:
+
+        rewrite_processor = Processor('gpt2-xl', low_cpu_mem_usage=True)
+
+        rewrite_processor.rewrite_apply(decode_deltas(request.data))
+
+        rewrite_generated = rewrite_processor.generate(
+            prompt, number_generated, topk)
 
     response = {
         'generated': generated,
@@ -118,5 +105,4 @@ def rewrite():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
-
+    app.run()

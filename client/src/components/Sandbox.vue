@@ -9,15 +9,6 @@
         <b-row>
             <b-col>
                 <b-row v-for="(generated, index) in normal_generated" :key="'sandbox-row-' + index">
-                    <b-col v-if="rewrite_generated[index] != undefined">
-                        <b-card bg-variant="white" 
-                            :key="'rewrite-generated-' + index" :header="'Rewrite'" class="h-100">
-                            <p style="font-family:Times;font-size:20px">{{rewrite_generated[index].input}}
-                            </p>
-                            <p style="margin-left:5%; font-style:italic;font-family:Times;font-size:20px">
-                                {{rewrite_generated[index].output}}</p>
-                        </b-card>
-                    </b-col>
                     <b-col>
                         <b-card bg-variant="light" :key="'normal-generated-' + index"
                             :header="rewrite_generated[index] != undefined ? 'Original' : ''" class="h-100">
@@ -27,7 +18,15 @@
                                 {{generated.output}}</p>
                         </b-card>
                     </b-col>
-                   
+                    <b-col v-if="rewrite_generated[index] != undefined">
+                        <b-card bg-variant="light" 
+                            :key="'rewrite-generated-' + index" :header="'Rewrite'" class="h-100">
+                            <p style="font-family:Times;font-size:20px">{{rewrite_generated[index].input}}
+                            </p>
+                            <p style="margin-left:5%; font-style:italic;font-family:Times;font-size:20px">
+                                {{rewrite_generated[index].output}}</p>
+                        </b-card>
+                    </b-col>
                 </b-row>
             </b-col>
         </b-row>
@@ -61,15 +60,15 @@ export default {
             axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: {'Content-Type': 'application/octet-stream'} })
                 .then((response) => {
 
-                    this.normal_generated.unshift({ input: prompt, output: response.data.generated })
+                    this.normal_generated.push({ input: prompt, output: response.data.generated })
 
                     if (response.data.rewrite_generated) {
-                        this.rewrite_generated.unshift({ input: prompt, output: response.data.rewrite_generated })
+                        this.rewrite_generated.push({ input: prompt, output: response.data.rewrite_generated })
 
                     }
                     else {
 
-                        this.rewrite_generated.unshift(undefined)
+                        this.rewrite_generated.push(undefined)
                     }
 
                     this.show_loading = false
