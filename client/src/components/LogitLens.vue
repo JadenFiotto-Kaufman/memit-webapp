@@ -1,11 +1,11 @@
 <template>
     <b-container fluid>
         <b-row>
-            <b-tabs pills vertical>
-                <b-tab v-for="logitlens_data in logitlens_items" :title="logitlens_data.name"
+            <b-tabs pills>
+                <b-tab :title-item-class="logitlens_items.length == 1 ? 'd-none' : ''" v-for="logitlens_data in logitlens_items" :title="logitlens_data.name"
                     :key="'tab-logitlens-' + logitlens_data.name">
                     <b-tabs pills vertical class="mt-3" v-model="logitlens_tabs">
-                        <b-tab :title="_logitlens_data.name" v-for="_logitlens_data in logitlens_data.data"
+                        <b-tab :title-item-class="logitlens_data.data.length == 1 ? 'd-none' : ''" :title="_logitlens_data.name" v-for="_logitlens_data in logitlens_data.data"
                             :key="'tab-logitlens-' + logitlens_data.name + '-' + _logitlens_data.name">
                             <b-table head-row-variant="light" bordered sticky-header="100vh"
                                 :items="_logitlens_data.data" :fields="_logitlens_data.fields" class="text-center">

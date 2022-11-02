@@ -11,7 +11,7 @@
         </b-row>
         <b-row v-if="(heatmaps.length > 0) && (search_token != '')">
             <b-tabs lazy content-class="mt-3" pills vertical class="mt-3">
-                <b-tab lazy v-for="(_heatmap_hs_index, heatmap_hs_index) in heatmaps[0].data.length"
+                <b-tab :title-item-class="(heatmaps[0].data.length == 1) ? 'd-none' : 'ummm'" lazy v-for="(_heatmap_hs_index, heatmap_hs_index) in heatmaps[0].data.length"
                     :title="heatmaps[0].data[heatmap_hs_index].name" :key="'tab-heatmap-hs-' + _heatmap_hs_index">
                     <b-container fluid>
                         <b-row>
@@ -147,6 +147,11 @@ export default {
                     }
 
                     this.heatmaps = items
+
+                    let temp_search_token = response.data.logitlens[0].words[response.data.logitlens[0].words.length - 1]
+                    temp_search_token = temp_search_token[temp_search_token.length - 1][0]
+
+                    this.search_token = temp_search_token.trim()
 
                 })
                 .catch((error) => {

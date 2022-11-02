@@ -14,7 +14,7 @@
     "bootstrap-vue": "^2.22.0",
     "chroma-js": "^2.4.2",
     "core-js": "^3.25.5",
-    "vue": "^2.7.12",
+    "vue": "^2.7.13",
     "vue-router": "^3.6.5"
   },
   "devDependencies": {
@@ -39,7 +39,9 @@
     "parserOptions": {
       "parser": "@babel/eslint-parser"
     },
-    "rules": {}
+    "rules": {
+      "no-unused-vars": "off" 
+    }
   },
   "browserslist": [
     "> 1%",
