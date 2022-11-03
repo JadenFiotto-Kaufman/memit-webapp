@@ -1,11 +1,5 @@
 <template>
     <b-container fluid>
-        <b-row style="margin-bottom: 20px" align-v="center">
-            <b-col>
-                <b-button @click="normal_generated = []; rewrite_generated = []" variant="primary">Clear
-                </b-button>
-            </b-col>
-        </b-row>
         <b-row>
             <b-col :style="{ 'flex-direction': 'column-reverse', 'display': 'flex' }">
                 <b-row v-for="(generated, index) in normal_generated" :key="'sandbox-row-' + index">
@@ -13,16 +7,17 @@
                         <b-container fluid>
                             <b-row>
                                 <b-col v-if="rewrite_generated[index] != undefined">
-                                    <b-card bg-variant="white" :key="'rewrite-generated-' + index" :header="'Rewrite'"
-                                        class="h-100">
-                                        <p style="margin-left:5%; font-family:Times;font-size:20px">
+                                    <b-card bg-variant="white" :key="'rewrite-generated-' + index"
+                                        :header="'Output of edited GPT-J'" class="h-100">
+                                        <p style="font-family:Times;font-size:20px">
                                             {{ rewrite_generated[index].output }}</p>
                                     </b-card>
                                 </b-col>
                                 <b-col>
                                     <b-card bg-variant="light" :key="'normal-generated-' + index"
-                                        :header="rewrite_generated[index] != undefined ? 'Original' : ''" class="h-100">
-                                        <p style="margin-left:5%; font-family:Times;font-size:20px">
+                                        :header="rewrite_generated[index] != undefined ? 'Output of original GPT-J' : ''"
+                                        class="h-100">
+                                        <p style="font-family:Times;font-size:20px">
                                             {{ generated.output }}</p>
                                     </b-card>
                                 </b-col>
@@ -31,7 +26,8 @@
                                 <b-col class="related_facts" style="margin-top:20px">
                                     <b-row>
                                         <b-button v-b-toggle="'related-facts-' + index" class="m-1"
-                                            variant="outline-secondary">Related Edited Memories</b-button>
+                                            variant="outline-secondary" style="text-align:start">Related Edited Memories
+                                        </b-button>
                                     </b-row>
                                     <b-row>
                                         <b-collapse visible :id="'related-facts-' + index">
@@ -46,16 +42,19 @@
                 </b-row>
             </b-col>
         </b-row>
+        <b-row style="margin-top: 20px" align-v="center">
+            <b-col>
+                <b-button @click="normal_generated = []; rewrite_generated = []" variant="primary">Clear
+                </b-button>
+            </b-col>
+        </b-row>
     </b-container>
 </template>
 
 <style>
-
-.related_facts:has(.row):has(.collapse):has(.container-fluid):has(.row):has(.col:empty){
-    display:none
-
+.related_facts:has(.row):has(.collapse):has(.container-fluid):has(.row):has(.col:empty) {
+    display: none
 }
-
 </style>
 
 <script>

@@ -11,13 +11,14 @@
         </b-row>
         <b-row v-if="(heatmaps.length > 0) && (search_token != '')">
             <b-tabs lazy content-class="mt-3" pills vertical class="mt-3">
-                <b-tab :title-item-class="(heatmaps[0].data.length == 1) ? 'd-none' : 'ummm'" lazy v-for="(_heatmap_hs_index, heatmap_hs_index) in heatmaps[0].data.length"
+                <b-tab :title-item-class="(heatmaps[0].data.length == 1) ? 'd-none' : 'ummm'" lazy
+                    v-for="(_heatmap_hs_index, heatmap_hs_index) in heatmaps[0].data.length"
                     :title="heatmaps[0].data[heatmap_hs_index].name" :key="'tab-heatmap-hs-' + _heatmap_hs_index">
                     <b-container fluid>
                         <b-row>
                             <b-col v-for="(heatmap_data, heatmap_index) in heatmaps"
                                 :key="'tab-heatmap-' + + heatmap_hs_index + '-' + heatmap_index">
-                                <b-row :style="{ 'justify-content': 'center' }">{{heatmap_data.name}}</b-row>
+                                <b-row :style="{ 'justify-content': 'center' }">{{ heatmap_data.name }}</b-row>
                                 <b-row :style="{ 'justify-content': 'center' }">
                                     <b-col v-for="(token, prompt_idx) in tokenized_prompt"
                                         :key="'tab-heatmap-prompt-' + heatmap_hs_index + '-' + heatmap_index + '-' + prompt_idx"
@@ -62,6 +63,10 @@ export default {
         prompt: {
             type: String,
             required: true
+        },
+        options:{
+            type:Object,
+            required:true
         }
     },
     data() {
@@ -88,7 +93,12 @@ export default {
 
             let _data = data.data[this.search_token]
 
-            let html = '<p>Probability: ' + _data?.probability + '</br>Rank: ' + (_data?.rank + 1) + '/' + this.n_words + '</p>'
+            let html = ''
+
+            if (_data){
+
+                html = '<p>Probability: ' + _data?.probability + '</br>Rank: ' + (_data?.rank + 1) + '/' + this.n_words + '</p>'
+            }
             return html
         },
 
@@ -105,18 +115,18 @@ export default {
                     prob = 1.0 - (prob / this.n_words)
                 }
             }
-        
+
 
             return this.scale(prob)
 
         },
 
-        heatmap(hidden_state_options, hidden_state_functions) {
+        heatmap() {
 
             this.$emit('toggle_loading')
 
             const path = process.env.VUE_APP_API_URL + 'logitlens';
-            let params = { indicies: hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: this.n_words }
+            let params = { indicies: this.options.hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: this.n_words }
 
             axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: { 'Content-Type': 'application/octet-stream' } })
                 .then((response) => {
@@ -129,10 +139,10 @@ export default {
 
                     for (const [key, value] of Object.entries(response.data.logitlens)) {
 
-                        original_items.push({ data: this._heatmap(value.words, value.probabilities, this.tokenized_prompt), name: hidden_state_options[key].text })
+                        original_items.push({ data: this._heatmap(value.words, value.probabilities, this.tokenized_prompt), name: this.options.hidden_state_options[key].text })
                     }
 
-                    items.push({ data: original_items, name: 'Original' })
+                    items.push({ data: original_items, name: 'GPT-J' })
 
                     if (response.data.rewrite_logitlens) {
 
@@ -140,15 +150,17 @@ export default {
 
                         for (const [key, value] of Object.entries(response.data.rewrite_logitlens)) {
 
-                            rewrite_items.push({ data: this._heatmap(value.words, value.probabilities, this.tokenized_prompt), name: hidden_state_options[key].text })
+                            rewrite_items.push({ data: this._heatmap(value.words, value.probabilities, this.tokenized_prompt), name: this.options.hidden_state_options[key].text })
                         }
 
-                        items.push({ data: rewrite_items, name: 'Rewritten' })
+                        items.push({ data: rewrite_items, name: 'Edited GPT-J' })
                     }
+
+                    items.reverse()
 
                     this.heatmaps = items
 
-                    let temp_search_token = response.data.logitlens[0].words[response.data.logitlens[0].words.length - 1]
+                    let temp_search_token = response.data.rewrite_logitlens[0].words[response.data.rewrite_logitlens[0].words.length - 1]
                     temp_search_token = temp_search_token[temp_search_token.length - 1][0]
 
                     this.search_token = temp_search_token.trim()
@@ -193,6 +205,13 @@ export default {
             return items_layers
 
         },
+    },
+
+    mounted() {
+
+        if (this.prompt.length != 0 && this.heatmaps.length == 0) {
+            this.heatmap()
+        }
     }
 
 };

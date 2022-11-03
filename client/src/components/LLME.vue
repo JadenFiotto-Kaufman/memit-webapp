@@ -1,5 +1,5 @@
 <template>
-    <b-overlay :show="loading" style="height:100vh; width:100vw">
+    <b-overlay :show="loading" style="height:100vh; width:98vw">
         <!-- <template #overlay>
             <b-spinner class="position-absolute bottom-50 end-50"></b-spinner>
         </template> -->
@@ -9,11 +9,10 @@
                 <LLME_Options ref="Options" :main_tab_index="main_tab_index"></LLME_Options>
             </b-container>
         </b-sidebar>
-        <b-container fluid style="position:sticky; top:1%; left:1%; z-index: 999; margin-left:1%">
+        <b-container fluid style="position:absolute; top:1%; left:1%; z-index: 999; width:auto">
             <b-row align-h="start">
                 <!-- <b-button style="width:auto" v-b-toggle.options-sidebar variant="primary">Options</b-button> -->
-                <b-button style="width:auto;" variant="primary"
-                    @click="go_to_help()">What's this?
+                <b-button style="width:auto;" variant="primary" @click="go_to_help()">What's this?
                 </b-button>
             </b-row>
         </b-container>
@@ -33,7 +32,7 @@
                     <b-row v-show="has_ran">
                         <b-card no-body>
                             <b-tabs card v-model="main_tab_index">
-                                <b-tab title="Sandbox" key="tab-sandbox">
+                                <b-tab title="Results" key="tab-sandbox">
                                     <LLME_Sandbox ref="Sandbox" :prompt="prompt" @toggle_loading="toggle_loading">
                                     </LLME_Sandbox>
                                 </b-tab>
@@ -41,13 +40,14 @@
                                     <LLME_RewriteFacts ref="RewriteFacts" @toggle_loading="toggle_loading">
                                     </LLME_RewriteFacts>
                                 </b-tab>
-                                <b-tab title="Logit Lens" key="tab-logitlens">
-                                    <LLME_LogitLens ref="LogitLens" :prompt="prompt" @alert="alert"
-                                        @toggle_loading="toggle_loading">
+                                <b-tab @click="on_logit_lens_tab()" v-if="$refs.Options" title="Logit Lens" key="tab-logitlens">
+                                    <LLME_LogitLens  ref="LogitLens" :prompt="prompt" :options="$refs.Options"
+                                        @alert="alert" @toggle_loading="toggle_loading">
                                     </LLME_LogitLens>
                                 </b-tab>
-                                <b-tab title="Heatmap" key="tab-heatmap">
-                                    <LLME_Heatmap ref="Heatmap" :prompt="prompt" @toggle_loading="toggle_loading">
+                                <b-tab @click="on_heatmap_tab()" v-if="$refs.Options" title="Heatmap" key="tab-heatmap">
+                                    <LLME_Heatmap ref="Heatmap" :prompt="prompt"
+                                        :options="$refs.Options" @toggle_loading="toggle_loading">
                                     </LLME_Heatmap>
                                 </b-tab>
 
@@ -56,11 +56,29 @@
                     </b-row>
                     <b-row v-show="!has_ran" style="margin: 0 15% 0 15%;">
                         <b-col>
-                            <b-row align-h="start">
-                                <b-button pill style="margin-right:10px; width:auto"
+
+                            <b-row>
+                                <p style="text-align: center">
+                                    Enter an incomplete sentence. <br> Our MEMIT-edited GPT-J will complete it for you and reveal its beliefs
+                                </p>
+                            </b-row>
+                            <b-row align-h="center">
+                                <b-button pill style="margin-right:10px; margin-bottom: 10px; width:auto"
                                     :key="'example_promopt-' + example_index"
                                     v-for="(example_prompt, example_index) in example_prompts" variant="primary"
                                     @click="prompt = example_prompt; on_prompt_enter()">{{ example_prompt }}</b-button>
+                            </b-row>
+                            <b-row>
+                                <p style="text-align: center">
+                                    Remember: don’t fill in the factual answer – let the model show you what it thinks.
+                                    <br><br>
+                                    Demo by: <a href="https://www.linkedin.com/in/jaden-fiotto-kaufman">Jaden
+                                        Fiotto-Kaufman</a>
+                                    <br>
+                                    <br>
+                                    Based the <a href="https://memit.baulab.info">MEMIT preprint by Meng, et al</a>
+
+                                </p>
                             </b-row>
                         </b-col>
 
@@ -111,7 +129,7 @@ export default {
             main_tab_index: 0,
             loading: false,
             has_ran: false,
-            example_prompts: ["The Eiffel Tower is in the city of", "Michael Jordan plays the sport of"]
+            example_prompts: ["Angela Merkel worked in the city of", "LeBron James plays the sport of", "Where was the Battle of France? It was fought in", "The Eiffel Tower is in the city of", "Michael Jordan plays the sport of"]
         };
     },
     methods: {
@@ -119,6 +137,17 @@ export default {
             let route = this.$router.resolve({ path: "/help" });
             window.open(route.href);
         },
+
+        on_logit_lens_tab() {
+            if (this.prompt.length != 0 && this.$refs.LogitLens.logitlens_items.length == 0) {
+                this.$refs.LogitLens.logitlens()
+            }
+        },
+        on_heatmap_tab() {
+            if (this.prompt.length != 0 && this.$refs.Heatmap.heatmaps.length == 0) {
+                this.$refs.Heatmap.heatmap()
+            }
+         },
 
         toggle_loading() {
             this.loading = !this.loading
@@ -144,7 +173,7 @@ export default {
 
                     return
                 }
-                this.$refs.LogitLens.logitlens(this.$refs.Options.hidden_state_options, this.$refs.Options.hidden_state_functions)
+                this.$refs.LogitLens.logitlens()
             }
             else if (this.main_tab_index == 0) {
                 this.$refs.Sandbox.generate(this.prompt, this.$refs.Options.number_generated, this.$refs.Options.topk_sampling)
@@ -156,7 +185,7 @@ export default {
 
                     return
                 }
-                this.$refs.Heatmap.heatmap(this.$refs.Options.hidden_state_options, this.$refs.Options.hidden_state_functions)
+                this.$refs.Heatmap.heatmap()
             }
         },
     },

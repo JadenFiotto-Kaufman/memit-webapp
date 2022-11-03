@@ -2,6 +2,6 @@ const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
   transpileDependencies: true,
   devServer: {
-    allowedHosts: ["karakuri.khoury.northeastern.edu"]
+    allowedHosts: ["karakuri.khoury.northeastern.edu", "baulab.khoury.northeastern.edu"]
   }
 })

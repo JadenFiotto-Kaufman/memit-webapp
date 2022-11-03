@@ -54,6 +54,10 @@ export default {
         prompt: {
             type: String,
             required: true
+        },
+        options:{
+            type:Object,
+            required:true
         }
     },
     data() {
@@ -119,7 +123,7 @@ export default {
 
 
         },
-        logitlens(hidden_state_options, hidden_state_functions) {
+        logitlens() {
 
             this.$emit('toggle_loading')
 
@@ -128,12 +132,10 @@ export default {
             this.rewrite_layers = {}
 
             const path = process.env.VUE_APP_API_URL + 'logitlens';
-            let params = { indicies: hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: 10 }
+            let params = { indicies: this.options.hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: 10 }
 
             axios.post(path, Vue.prototype.$rewrite_deltas, { params: params, headers: { 'Content-Type': 'application/octet-stream' } })
                 .then((response) => {
-
-                    console.log(response)
 
                     let tokenized_prompt = response.data.prompt
 
@@ -149,7 +151,7 @@ export default {
 
                     for (const [key, value] of Object.entries(response.data.logitlens)) {
 
-                        original_items.push({ data: this._logitlens(value.words, value.probabilities, tokenized_prompt, hidden_state_options[key].value.color), name: hidden_state_options[key].text, fields: fields })
+                        original_items.push({ data: this._logitlens(value.words, value.probabilities, tokenized_prompt, this.options.hidden_state_options[key].value.color), name: this.options.hidden_state_options[key].text, fields: fields })
                     }
 
                     items.push({ data: original_items, name: 'Original' })
@@ -160,7 +162,7 @@ export default {
 
                         for (const [key, value] of Object.entries(response.data.rewrite_logitlens)) {
 
-                            rewrite_items.push({ data: this._logitlens(value.words, value.probabilities, tokenized_prompt, hidden_state_options[key].value.color), name: hidden_state_options[key].text, fields: fields })
+                            rewrite_items.push({ data: this._logitlens(value.words, value.probabilities, tokenized_prompt, this.options.hidden_state_options[key].value.color), name: this.options.hidden_state_options[key].text, fields: fields })
                         }
 
                         items.push({ data: rewrite_items, name: 'Rewritten' })
@@ -193,7 +195,6 @@ export default {
             return items
 
         },
-    }
-
+    },
 };
 </script>

@@ -1,7 +1,6 @@
 import io
 import json
 import os
-
 import torch
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
@@ -10,8 +9,6 @@ from .pompeii.hidden_state_options import HiddenStateOption
 from .pompeii.Processor import Processor
 
 app = Flask(__name__)
-app.config.from_object(__name__)
-app.secret_key = 'debug_key'
 
 CORS(app)
 
@@ -43,7 +40,7 @@ def decode_deltas(data):
     return torch.load(io.BytesIO(data))
 
 
-@app.route('/options', methods=['POST'])
+@app.route('/options', methods=['GET', 'POST'])
 def options():
 
     response = {
@@ -52,7 +49,7 @@ def options():
 
     return jsonify(response)
 
-@app.route('/rewritefacts', methods=['POST'])
+@app.route('/rewritefacts', methods=['GET', 'POST'])
 def rewritefacts():
 
     return jsonify(memit_rewritten_facts)
@@ -118,5 +115,16 @@ def rewrite():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--port', type=int, default=8081)
+
+    args = parser.parse_args()
+
+    app.config.from_object('server.config.DevConfig')
+
+    app.run(host='0.0.0.0', port=args.port, use_reloader=False)
 
