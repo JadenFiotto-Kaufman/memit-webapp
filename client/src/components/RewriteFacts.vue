@@ -10,8 +10,7 @@
             <b-col>
                 <b-row
                     v-for="(rewrite_fact, index) in search_rewrite_facts.slice((currentPage - 1) * perPage, currentPage * perPage)"
-                    :key="'rewritefacts-row-' + index">
-                    <b-card bg-variant="light">
+                    :key="'rewritefacts-row-' + index">   
                         <p style="font-family:Times;font-size:20px">
                             {{ rewrite_fact.prompt[0]
                             }}<u>{{ rewrite_fact.subject }}</u>{{ rewrite_fact.prompt[1] }} <b>{{
@@ -23,7 +22,6 @@
         rewrite_fact.target_new
 }}</b>
                         </p>
-                    </b-card>
                 </b-row>
             </b-col>
         </b-row>
@@ -61,7 +59,7 @@ export default {
             rewrite_fact_search: '',
             currentPage: 1,
             numRows: 0,
-            perPage: 6
+            perPage: 10
         }
     },
 
@@ -97,7 +95,7 @@ export default {
         },
 
         search() {
-            this.$emit('toggle_loading')
+            this.$emit('toggle_on_loading')
 
 
             if (this.sandbox) {
@@ -123,7 +121,7 @@ export default {
 
             this.numRows = this.search_rewrite_facts.length
             this.currentPage = 1
-            this.$emit('toggle_loading')
+            this.$emit('toggle_off_loading')
         },
 
     },

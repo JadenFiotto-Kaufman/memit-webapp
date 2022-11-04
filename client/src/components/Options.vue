@@ -86,7 +86,7 @@ export default {
 
             hidden_state_options: [],
             hidden_state_functions: [],
-            number_generated: 10,
+            number_generated: 20,
             topk_sampling: 1
 
         };

@@ -123,7 +123,7 @@ export default {
 
         heatmap() {
 
-            this.$emit('toggle_loading')
+            this.$emit('toggle_on_loading')
 
             const path = process.env.VUE_APP_API_URL + 'logitlens';
             let params = { indicies: this.options.hidden_state_functions.map(function (option) { return option.index }), prompt: this.prompt, topn: this.n_words }
@@ -169,7 +169,7 @@ export default {
                 .catch((error) => {
                     console.error(error)
                 }).finally(() => {
-                    this.$emit('toggle_loading')
+                    this.$emit('toggle_off_loading')
                 });
         },
         _heatmap(words, probabilities, tokenized_prompt) {

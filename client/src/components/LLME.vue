@@ -1,5 +1,5 @@
 <template>
-    <b-overlay :show="loading" style="height:100vh; width:98vw">
+    <b-overlay :show="loading > 0" style="height:100vh; width:98vw">
         <!-- <template #overlay>
             <b-spinner class="position-absolute bottom-50 end-50"></b-spinner>
         </template> -->
@@ -31,23 +31,23 @@
                     </b-row>
                     <b-row v-show="has_ran">
                         <b-card no-body>
-                            <b-tabs card v-model="main_tab_index">
+                            <b-tabs card v-model="main_tab_index" @activate-tab="on_tab_change">
                                 <b-tab title="Results" key="tab-sandbox">
-                                    <LLME_Sandbox ref="Sandbox" :prompt="prompt" @toggle_loading="toggle_loading">
+                                    <LLME_Sandbox ref="Sandbox" :prompt="prompt" @toggle_on_loading="toggle_on_loading" @toggle_off_loading="toggle_off_loading">
                                     </LLME_Sandbox>
                                 </b-tab>
                                 <b-tab title="Edited Memories" key="tab-rewritefacts">
-                                    <LLME_RewriteFacts ref="RewriteFacts" @toggle_loading="toggle_loading">
+                                    <LLME_RewriteFacts ref="RewriteFacts" @toggle_on_loading="toggle_on_loading" @toggle_off_loading="toggle_off_loading">
                                     </LLME_RewriteFacts>
                                 </b-tab>
-                                <b-tab @click="on_logit_lens_tab()" v-if="$refs.Options" title="Logit Lens" key="tab-logitlens">
+                                <b-tab v-if="$refs.Options" title="Logit Lens" key="tab-logitlens">
                                     <LLME_LogitLens  ref="LogitLens" :prompt="prompt" :options="$refs.Options"
-                                        @alert="alert" @toggle_loading="toggle_loading">
+                                        @alert="alert" @toggle_on_loading="toggle_on_loading" @toggle_off_loading="toggle_off_loading">
                                     </LLME_LogitLens>
                                 </b-tab>
-                                <b-tab @click="on_heatmap_tab()" v-if="$refs.Options" title="Heatmap" key="tab-heatmap">
+                                <b-tab v-if="$refs.Options" title="Heatmap" key="tab-heatmap">
                                     <LLME_Heatmap ref="Heatmap" :prompt="prompt"
-                                        :options="$refs.Options" @toggle_loading="toggle_loading">
+                                        :options="$refs.Options" @toggle_on_loading="toggle_on_loading" @toggle_off_loading="toggle_off_loading">
                                     </LLME_Heatmap>
                                 </b-tab>
 
@@ -127,9 +127,10 @@ export default {
 
             prompt: '',
             main_tab_index: 0,
-            loading: false,
+            loading: 0,
             has_ran: false,
-            example_prompts: ["Angela Merkel worked in the city of", "LeBron James plays the sport of", "Where was the Battle of France? It was fought in", "The Eiffel Tower is in the city of", "Michael Jordan plays the sport of"]
+            last_prompt_ran: {},
+            example_prompts: ["Angela Merkel worked in the city of", "LeBron James plays the sport of", "Where was the Battle of France? It was fought in", "The Eiffel Tower is in the city of", "Pollux is in the constellation of"]
         };
     },
     methods: {
@@ -137,20 +138,31 @@ export default {
             let route = this.$router.resolve({ path: "/help" });
             window.open(route.href);
         },
+        on_tab_change(new_tab_index, prev_tab_index, event){
 
-        on_logit_lens_tab() {
-            if (this.prompt.length != 0 && this.$refs.LogitLens.logitlens_items.length == 0) {
-                this.$refs.LogitLens.logitlens()
+            this.main_tab_index = new_tab_index
+
+            if (!(new_tab_index in this.last_prompt_ran)){
+
+                this.last_prompt_ran[new_tab_index] = ''
+
             }
+
+            if (this.last_prompt_ran[new_tab_index] != this.prompt){
+
+                this.on_prompt_enter()
+
+            }
+
+            this.last_prompt_ran[new_tab_index] = this.prompt
+
         },
-        on_heatmap_tab() {
-            if (this.prompt.length != 0 && this.$refs.Heatmap.heatmaps.length == 0) {
-                this.$refs.Heatmap.heatmap()
-            }
-         },
+        toggle_on_loading() {
+            this.loading += 1
+        },
 
-        toggle_loading() {
-            this.loading = !this.loading
+        toggle_off_loading() {
+            this.loading -= 1
         },
         alert(message, time) {
             this.$refs.Alert.alert(message, time)
@@ -167,6 +179,7 @@ export default {
             this.has_ran = true
 
             if (this.main_tab_index == 2) {
+                
                 if (this.$refs.Options.hidden_state_functions.length == 0) {
 
                     this.alert('Select at least one hidden state', 2)

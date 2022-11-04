@@ -102,7 +102,7 @@ export default {
                 return
             }
 
-            this.$emit('toggle_loading')
+            this.$emit('toggle_on_loading')
 
             const path = process.env.VUE_APP_API_URL + 'rewrite';
             let params = { layers: Object.keys(this.rewrite_layers), token_idx: this.rewrite_token_index, prompt: this.prompt, target: this.rewrite_target }
@@ -118,14 +118,14 @@ export default {
                 .catch((error) => {
                     console.error(error)
                 }).finally(() => {
-                    this.$emit('toggle_loading')
+                    this.$emit('toggle_off_loading')
                 });
 
 
         },
         logitlens() {
 
-            this.$emit('toggle_loading')
+            this.$emit('toggle_on_loading')
 
             this.rewrite_token_index = undefined
             this.rewrite_toggle = false
@@ -142,7 +142,7 @@ export default {
                     let fields = ['Layer']
 
                     for (let token_idx = 0; token_idx < tokenized_prompt.length; token_idx++) {
-                        fields.push({ key: tokenized_prompt[token_idx], label: tokenized_prompt[token_idx], index: token_idx })
+                        fields.push({ key: 'T' + token_idx, label: tokenized_prompt[token_idx], index: token_idx })
                     }
 
                     let items = []
@@ -175,7 +175,7 @@ export default {
                 .catch((error) => {
                     console.error(error)
                 }).finally(() => {
-                    this.$emit('toggle_loading')
+                    this.$emit('toggle_off_loading')
                 });
         },
         _logitlens(words, probabilities, tokenized_prompt, color) {
@@ -185,7 +185,7 @@ export default {
             for (let layer = 0; layer < words.length; layer++) {
                 let item = { Layer: layer + 1, colors: [] }
                 for (let token_idx = 0; token_idx < tokenized_prompt.length; token_idx++) {
-                    item[tokenized_prompt[token_idx]] = words[layer][token_idx][0]
+                    item['T'+token_idx] = words[layer][token_idx][0]
                     let probability = probabilities[layer][token_idx][0]
                     item.colors.push(color.map(function (x) { return 255 * (1 - probability) + x * probability }))
                 }
