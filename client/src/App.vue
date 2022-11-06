@@ -2,6 +2,7 @@
   <div>
     <router-view />
   </div>
+  
 </template>
 
 <style>
@@ -27,9 +28,3 @@ nav a.router-link-exact-active {
 }
 </style>
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-FD12LWN557"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date()); gtag('config', 'G-FD12LWN557');
-</script>

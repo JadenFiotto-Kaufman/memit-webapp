@@ -15,6 +15,7 @@
     "chroma-js": "^2.4.2",
     "core-js": "^3.25.5",
     "vue": "^2.7.13",
+    "vue-gtag": "^1.16.1",
     "vue-router": "^3.6.5"
   },
   "devDependencies": {
@@ -40,7 +41,7 @@
       "parser": "@babel/eslint-parser"
     },
     "rules": {
-      "no-unused-vars": "off" 
+      "no-unused-vars": "off"
     }
   },
   "browserslist": [

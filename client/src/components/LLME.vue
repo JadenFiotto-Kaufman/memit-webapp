@@ -1,5 +1,5 @@
 <template>
-    <b-overlay :show="loading > 0" style="height:100vh; width:98vw">
+    <b-overlay :show="loading > 0" style="height:100vh; width:100vw">
         <!-- <template #overlay>
             <b-spinner class="position-absolute bottom-50 end-50"></b-spinner>
         </template> -->
@@ -13,6 +13,12 @@
             <b-row align-h="start">
                 <!-- <b-button style="width:auto" v-b-toggle.options-sidebar variant="primary">Options</b-button> -->
                 <b-button style="width:auto;" variant="primary" @click="go_to_help()">What's this?
+                </b-button>
+            </b-row>
+        </b-container>
+        <b-container fluid style="position:absolute; top:1%; right:2%; z-index: 999; width:auto; padding:0">
+            <b-row align-h="start">
+                <b-button style="width:auto;" variant="primary" @click="$router.go()">MEMIT
                 </b-button>
             </b-row>
         </b-container>
@@ -81,7 +87,6 @@
                                 </p>
                             </b-row>
                         </b-col>
-
                     </b-row>
                 </b-col>
             </b-row>
@@ -153,9 +158,6 @@ export default {
                 this.on_prompt_enter()
 
             }
-
-            this.last_prompt_ran[new_tab_index] = this.prompt
-
         },
         toggle_on_loading() {
             this.loading += 1
@@ -200,6 +202,8 @@ export default {
                 }
                 this.$refs.Heatmap.heatmap()
             }
+
+            this.last_prompt_ran[this.main_tab_index] = this.prompt
         },
     },
 
